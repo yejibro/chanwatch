@@ -1,0 +1,37 @@
+. ~/.yeji/globalsettings.conf
+
+# for MacPorts
+export PATH="$PATH:/opt/local/bin"
+
+keywordstore=$CONFDIR/keywords.conf
+
+DBDIR=$DBDIR/rosiedb
+generals=$(wget -q -O - https://a.4cdn.org/mu/catalog.json | jq '.[].threads[] | select(.sub != null) | select(.sub | contains("KPOP")) | .no' | head -n 3)
+keywords=$(cat $keywordstore)
+
+# replace with something that will produce sound on your system
+manyding () {
+	afplay /System/Library/Sounds/Glass.aiff& sleep 0.3; afplay /System/Library/Sounds/Glass.aiff& sleep 0.3; afplay /System/Library/Sounds/Glass.aiff; sleep 0.3;
+}
+
+while [ true ]; do
+	for i in $generals; do
+		if [ ! -d ${DBDIR}/${i} ]; then mkdir ${DBDIR}/${i}; printf '+'; fi
+		for key in $keywords; do
+			kwno=$(wget -q -O - https://a.4cdn.org/mu/thread/$i.json | jq '.posts[] | select(.com != null) | select(.com | match("'$key'";"i")) | .no')
+			for keyno in $kwno; do
+				if [ ! -f ${DBDIR}/${i}/${keyno} ]; then
+					touch ${DBDIR}/${i}/${keyno}
+					# replace this with something that will display a notification on your system
+					osascript -e 'display notification "'$key'" with title "Someone needs (You) in '$i'!"'
+					manyding
+					printf 'x'
+				else
+					printf '.'
+				fi
+			done
+		done
+	done
+	sleep 120
+	generals=$(wget -q -O - https://a.4cdn.org/mu/catalog.json | jq '.[].threads[] | select(.sub != null) | select(.sub | contains("KPOP")) | .no')
+done
